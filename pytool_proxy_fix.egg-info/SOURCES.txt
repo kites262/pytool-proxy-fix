@@ -1,8 +1,9 @@
 LICENSE
 pyproject.toml
 setup.py
-proxy_fix/__init__.py
-proxy_fix/fix_urllib_https.py
+pytool_proxy_fix/__init__.py
+pytool_proxy_fix/fix_urllib_https.py
+pytool_proxy_fix/main.py
 pytool_proxy_fix.egg-info/PKG-INFO
 pytool_proxy_fix.egg-info/SOURCES.txt
 pytool_proxy_fix.egg-info/dependency_links.txt

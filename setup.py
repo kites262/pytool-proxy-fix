@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pytool-proxy-fix",
-    version="0.1.0",
+    version="0.1.2",
     description="Fix urllib for python 3.7/3.8",
     long_description=open("README.MD").read(),
     long_description_content_type="text/markdown",
@@ -19,7 +19,7 @@ setup(
     python_requires=">=3.7, <3.9",
     entry_points={
         "console_scripts": [
-            "pytool-proxy-fix=tool_fix_urllib.main:main_fix_urllib",
+            "pytool-proxy-fix=pytool_proxy_fix.main:main_fix_urllib",
         ],
     },
     license="MIT",

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: pytool-proxy-fix
-Version: 0.1.0
+Version: 0.1.2
 Summary: Fix urllib for python 3.7/3.8
 Home-page: https://github.com/kites262/tool-fix-urllib
 Author: kites262
