@@ -1,0 +1,2 @@
+[console_scripts]
+pytool-proxy-fix = tool_fix_urllib.main:main_fix_urllib

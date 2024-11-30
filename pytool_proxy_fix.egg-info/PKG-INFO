@@ -1,0 +1,56 @@
+Metadata-Version: 2.1
+Name: pytool-proxy-fix
+Version: 0.1.0
+Summary: Fix urllib for python 3.7/3.8
+Home-page: https://github.com/kites262/tool-fix-urllib
+Author: kites262
+Author-email: kites262@github.com
+License: MIT
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7, <3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# pytool-proxy-fix
+
+A simple tool to fix the bug when `pip install` fails due to SSL errors in Python `3.7`, `3.8`.
+
+Error message look like this:
+
+```bash
+WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'SSLError(SSLZeroReturnError(6, '
+TLS/SSL connection has been closed (EOF)
+```
+
+When the system proxy is set while `pip.ini` is not configured, `pip install` may fail with SSL errors.
+
+This tool will fix the issue.
+
+## Requirements
+
+This tool is **ONLY** for Python `3.7`, `3.8`: Tool will edit a specific file in the Python standard library.
+
+For other versions, the problem may **VARIES**. However, try to add a `pip.ini` for the proxy settings is never a bad idea.
+
+Refer to [This Blog Post](https://kites.cc/p/python-pip-ssl-proxy-error/)
+
+## Installation
+
+You can install this package using pip:
+
+```bash
+pip install pytool-proxy-fix
+```
+
+## Usage
+
+Once installed, you can use the tool by running the following command:
+
+```bash
+pytool-proxy-fix
+```
+
+The tool will automatically fix the issue.
