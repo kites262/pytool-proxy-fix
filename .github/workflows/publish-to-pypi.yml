@@ -23,6 +23,7 @@ jobs:
       startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
     outputs:
+      branch: ${{ steps.release.outputs.branch }}
       sha: ${{ steps.release.outputs.sha }}
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
@@ -40,6 +41,7 @@ jobs:
           fi
 
           version="${BASH_REMATCH[1]}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -188,4 +190,25 @@ jobs:
             gh release upload "$TAG" dist/* --clobber
           else
             gh release create "$TAG" --title "$TAG" --generate-notes dist/*
+          fi
+
+  cleanup-release-branch:
+    name: Delete release branch
+    needs: [validate, publish-github]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Delete release branch if it exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ needs.validate.outputs.branch }}
+        run: |
+          if gh api "repos/$GH_REPO/git/ref/heads/$BRANCH" >/dev/null 2>&1; then
+            gh api --method DELETE "repos/$GH_REPO/git/refs/heads/$BRANCH"
+            echo "Deleted release branch: $BRANCH"
+          else
+            echo "Release branch is already absent: $BRANCH"
           fi
