@@ -1,0 +1,118 @@
+name: Prepare release
+
+on:
+  create:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  bump-version:
+    name: Bump release version
+    if: >-
+      github.event.ref_type == 'branch' &&
+      startsWith(github.event.ref, 'release/v')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+
+    steps:
+      - name: Parse release branch
+        id: release
+        env:
+          BRANCH: ${{ github.event.ref }}
+        run: |
+          if [[ ! "$BRANCH" =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Release branch must match release/vX.Y.Z: $BRANCH"
+            exit 1
+          fi
+
+          version="${BASH_REMATCH[1]}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: .python-version
+
+      - name: Verify release starting point and version
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          git fetch origin main
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+            echo "Release branch must be created from the current main branch."
+            exit 1
+          fi
+
+          current_version="$(python -c 'import runpy; print(runpy.run_path("pytool_proxy_fix/_version.py")["__version__"])')"
+          if ! CURRENT_VERSION="$current_version" RELEASE_VERSION="$VERSION" python - <<'PY'
+          import os
+
+          current = tuple(int(part) for part in os.environ["CURRENT_VERSION"].split("."))
+          release = tuple(int(part) for part in os.environ["RELEASE_VERSION"].split("."))
+          raise SystemExit(0 if release > current else 1)
+          PY
+          then
+            echo "Release version ($VERSION) must be newer than current version ($current_version)."
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Release tag already exists: $TAG"
+            exit 1
+          fi
+
+      - name: Bump package version
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          sed -i -E \
+            "s/^__version__ = \".*\"$/__version__ = \"$VERSION\"/" \
+            pytool_proxy_fix/_version.py
+
+          package_version="$(python -c 'import runpy; print(runpy.run_path("pytool_proxy_fix/_version.py")["__version__"])')"
+          if [ "$package_version" != "$VERSION" ]; then
+            echo "Failed to update package version to $VERSION."
+            exit 1
+          fi
+
+      - name: Commit and push version bump
+        id: commit
+        env:
+          BRANCH: ${{ steps.release.outputs.branch }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pytool_proxy_fix/_version.py
+          git commit -m "chore(release): bump version to $VERSION"
+          git push origin "HEAD:$BRANCH"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Start release validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.release.outputs.branch }}
+          VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          gh workflow run release-pr.yml \
+            --ref "$BRANCH" \
+            -f branch="$BRANCH" \
+            -f version="$VERSION" \
+            -f expected_sha="$RELEASE_SHA"
