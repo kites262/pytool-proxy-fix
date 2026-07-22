@@ -94,6 +94,7 @@ jobs:
         uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
+          save-cache: false
 
       - name: Build package
         run: uv build
